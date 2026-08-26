@@ -21,8 +21,10 @@ npm run check
 npm run test:e2e
 ```
 
-The end-to-end test expects Microsoft Edge at its standard Windows installation
-path. Set `EDGE_PATH` to use another Chromium-based Edge executable.
+The game targets current Chrome, Safari, Firefox, and Edge releases on desktop
+and mobile. The local end-to-end test uses Microsoft Edge only because that is
+the browser installed on the headless test workstation. Set `EDGE_PATH` to
+point the test harness at another Chromium-based browser executable.
 
 ## Deployment
 
