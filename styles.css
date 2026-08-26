@@ -57,8 +57,8 @@ button { color: inherit; cursor: pointer; }
 .top-nav button:hover { background: var(--panel); }
 .more-button::before { content:""; position:absolute; inset:0; z-index:-1; background:var(--ink); transform:scaleX(var(--hold,0)); transform-origin:left; }
 .more-button.holding { color:var(--paper); }
-.site-search { position: absolute; top: 62px; left: max(1rem, calc(50% - 290px)); z-index: -1; display: flex; width: min(580px, calc(100% - 2rem)); opacity: 0; pointer-events: none; transition: opacity .4s; }
-.site-search.available { z-index: 4; opacity: 1; pointer-events: auto; }
+.site-search { display: none; width: min(580px, calc(100% - 2rem)); margin: .85rem auto; opacity: 0; pointer-events: none; transition: opacity .4s; }
+.site-search.available { display: flex; opacity: 1; pointer-events: auto; }
 .site-search input { flex:1; min-width:0; padding:.72rem .9rem; border:1px solid var(--ink); background:var(--paper); }
 .site-search button { padding:0 1rem; border:1px solid var(--ink); border-left:0; color:var(--paper); background:var(--ink); font:700 .75rem Arial,sans-serif; text-transform:uppercase; }
 
@@ -107,9 +107,10 @@ button { color: inherit; cursor: pointer; }
 .ad-slot span { margin-top:.4rem; font-size:.8rem; }
 .ad-label { margin:0 0 .8rem; color:#68706b; font:.55rem Arial,sans-serif; text-transform:uppercase; letter-spacing:.1em; }
 .movable-ad { position:absolute; inset:0; z-index:2; display:grid; align-content:center; justify-items:center; padding:1rem; background:#d8d8b8; cursor:move; touch-action:none; transition:box-shadow .2s; }
-.movable-ad.moved { transform:translate(120px,70px) rotate(-2deg)!important; box-shadow:0 16px 35px #0004; }
+.movable-ad.moved { transform:translate(50px,155px) rotate(-3deg) scale(.72)!important; box-shadow:0 16px 35px #0004; }
 .movable-ad>button { position:absolute; top:.3rem; right:.45rem; border:0; background:none; font:1rem Arial,sans-serif; }
-.forecast-link { border:0; border-bottom:1px solid currentColor; background:transparent; font-style:italic; }
+.forecast-link { padding:.4rem; border:0; border-bottom:1px solid currentColor; background:transparent; font-style:italic; opacity:.18; pointer-events:none; transition:opacity .3s; }
+.ad-slot:has(.movable-ad.moved) .forecast-link { opacity:1; pointer-events:auto; }
 
 .correction-word { padding:0 .1rem; border:0; border-bottom:1px dotted var(--muted); background:transparent; }
 .correction-word:disabled { color:var(--muted); text-decoration:line-through; opacity:.6; }
@@ -172,7 +173,6 @@ dialog button { min-width:70px; padding:.55rem; border:1px solid var(--line); ba
   .brand { justify-self:center; font-size:2rem; }
   .top-nav { justify-content:flex-start; overflow:auto; }
   .top-nav button { min-width:auto; padding:.7rem .85rem; }
-  .site-search { top:49px; }
   .ticker { gap:1rem; }
   .site-grid { grid-template-columns:1fr; }
   .left-rail { display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; order:2; }
