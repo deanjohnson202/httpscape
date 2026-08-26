@@ -1,7 +1,8 @@
 # HTTPscape
 
-An escape room hidden inside a single evolving website. It offers no room names,
-progress meter, instructions, or hints; the page itself is the puzzle.
+An escape room hidden inside an evolving local-news website. It offers no room
+names, progress meter, instructions, or hints; ordinary page content and controls
+become the puzzle.
 
 ## Run locally
 
@@ -25,4 +26,4 @@ path. Set `EDGE_PATH` to use another Chromium-based Edge executable.
 
 ## Deployment
 
-The site is designed for GitHub Pages and can be served directly from the repository root. Player progress is saved in the browser under `httpscape-progress-v2`; no player data leaves the device.
+The site is designed for GitHub Pages and can be served directly from the repository root. Player progress is saved in the browser under `httpscape-progress-v3`; no player data leaves the device.

@@ -1,24 +1,15 @@
 const page = document.querySelector("#page");
 const resetDialog = document.querySelector("#reset-dialog");
-const STORAGE_KEY = "httpscape-progress-v2";
-const LAST_STEP = 11;
+const STORAGE_KEY = "httpscape-progress-v3";
 
-let state = { step: 1, started: Date.now() };
+let state = { step: 1, started: Date.now(), sorted: false };
 try {
   const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-  if (saved && Number.isInteger(saved.step) && saved.step >= 1 && saved.step <= LAST_STEP) state = saved;
+  if (saved && Number.isInteger(saved.step) && saved.step >= 1 && saved.step <= 11) state = saved;
 } catch {}
 
 const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 const normalize = (value) => value.toLowerCase().trim().replace(/[.!?,]+$/g, "").replace(/\s+/g, " ");
-const wait = (milliseconds) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
-
-function section(className = "") {
-  const element = document.createElement("section");
-  element.className = `scene ${className}`.trim();
-  page.append(element);
-  return element;
-}
 
 function shake(element) {
   element.classList.remove("shake");
@@ -26,336 +17,384 @@ function shake(element) {
   element.classList.add("shake");
 }
 
-function advance(current) {
-  current.querySelectorAll("button, input").forEach((control) => control.disabled = true);
-  state.step += 1;
+function advance(step, delay = 450) {
+  state.step = step;
   save();
-  window.setTimeout(() => {
-    const next = renderStep(state.step);
-    next.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, 550);
+  window.setTimeout(render, delay);
 }
 
-const echoes = [
-  "",
-  "hello.",
-  "●",
-  "held.",
-  "four lights remember.",
-  "turn out the lights.",
-  "darkness.",
-  "one star was awake.",
-  "balance.",
-  "keys without locks.",
-  "the page."
-];
+function renderOpening() {
+  page.className = "opening";
+  page.replaceChildren();
+  document.body.classList.remove("night");
+  document.title = " ";
 
-function renderEcho(step) {
-  const echo = section("echo");
-  echo.textContent = echoes[step];
+  if (state.step === 1) {
+    const scene = document.createElement("section");
+    scene.className = "opening-scene";
+    scene.innerHTML = '<form class="entry"><label class="sr-only" for="greeting">Message</label><input id="greeting" autocomplete="off" aria-label="Message"><button>Send</button></form>';
+    const form = scene.querySelector("form");
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const accepted = ["hello", "hi", "hey", "hiya", "howdy", "greetings", "good morning", "good afternoon", "good evening"];
+      accepted.includes(normalize(form.querySelector("input").value)) ? advance(2) : shake(form);
+    });
+    page.append(scene);
+    form.querySelector("input").focus();
+    return;
+  }
+
+  const descent = document.createElement("section");
+  descent.className = "descent";
+  descent.innerHTML = '<p>You know just what buttons to push.</p><button class="green-button" type="button" aria-label="Green button"></button>';
+  descent.querySelector("button").addEventListener("click", () => advance(3, 250));
+  page.append(descent);
 }
 
-function greeting() {
-  const scene = section();
-  const form = document.createElement("form");
-  form.className = "entry";
-  form.innerHTML = '<label class="sr-only" for="greeting">Message</label><input id="greeting" autocomplete="off" aria-label="Message"><button>Send</button>';
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const accepted = ["hello", "hi", "hey", "hiya", "howdy", "greetings", "good morning", "good afternoon", "good evening"];
-    if (accepted.includes(normalize(form.querySelector("input").value))) advance(scene);
-    else shake(form);
-  });
-  scene.append(form);
-  form.querySelector("input").focus();
-  return scene;
+function shellMarkup() {
+  return `
+    <div class="publication">
+      <header class="masthead">
+        <div class="utility"><span>Wednesday, August 26</span><span class="weather-brief">72° · Mostly ordinary</span></div>
+        <div class="brand-row">
+          <button class="menu-button" type="button" aria-label="Menu"><i></i><i></i><i></i></button>
+          <button class="brand" type="button">The Daily Ordinary</button>
+          <button class="account-button" type="button">Sign in</button>
+        </div>
+        <nav class="top-nav" aria-label="Primary">
+          <button type="button">Local</button><button type="button">Weather</button><button type="button">Culture</button>
+          <button type="button">Science</button><button class="more-button" type="button">More</button>
+        </nav>
+        <form class="site-search" role="search">
+          <input aria-label="Search the site" autocomplete="off">
+          <button type="submit">Search</button>
+        </form>
+      </header>
+
+      <div class="ticker" aria-label="Latest headlines">
+        <span>BREAKING, EVENTUALLY</span>
+        <p>Town clock remains approximately correct</p>
+        <p>Officials decline to comment on unusually confident duck</p>
+      </div>
+
+      <div class="site-grid">
+        <aside class="left-rail">
+          <section class="side-menu"></section>
+          <section class="updates">
+            <header><h2>Latest updates</h2><button class="sort-button" type="button" aria-label="Sort updates">↕</button></header>
+            <div class="update-list"></div>
+          </section>
+        </aside>
+
+        <main class="article-area"></main>
+
+        <aside class="right-rail">
+          <section class="popular">
+            <h2>Most read</h2>
+            <ol>
+              <li><a href="#">Five Quiet Benches Ranked</a></li>
+              <li><a href="#">Is Your Shed Judging You?</a></li>
+              <li><a href="#">Soup: Still Warm</a></li>
+            </ol>
+          </section>
+          <section class="weather-card">
+            <span class="weather-icon">☀</span>
+            <div><strong>Perfectly adequate</strong><small>High 72 · Low 61</small></div>
+          </section>
+          <section class="ad-slot"></section>
+        </aside>
+      </div>
+
+      <footer class="site-footer">
+        <div><strong>The Daily Ordinary</strong><span>Reporting on things that happened.</span></div>
+        <nav><a href="#">About</a><a href="#">Corrections</a><a href="#">Contact</a><a href="#">Privacy</a></nav>
+        <label class="theme-switch"><input type="checkbox"><i></i><span>Night reading</span></label>
+        <small>© 2026 Ordinary Media Concern</small>
+      </footer>
+    </div>`;
 }
 
-function below() {
-  const scene = section("descent");
-  scene.innerHTML = '<p class="line">You know just what buttons to push.</p>';
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "green-button";
-  button.setAttribute("aria-label", "Green button");
-  button.addEventListener("click", () => advance(scene));
-  scene.append(button);
-  return scene;
+function ordinaryArticle() {
+  return `
+    <article class="article">
+      <p class="section-label">Local observations</p>
+      <h1>Area Pigeon Walks Entire Length of Crosswalk Despite Being Able to Fly</h1>
+      <p class="dek">Witnesses described the decision as “methodical” and “probably none of our business.”</p>
+      <div class="byline">By Marjorie Crumb <span>·</span> 9:14 a.m.</div>
+      <figure class="hero-art" role="img" aria-label="An abstract illustration of a pigeon at a crosswalk">
+        <div class="sun"></div><div class="road"></div><div class="pigeon">◆</div>
+      </figure>
+      <div class="article-body">
+        <p>At 8:42 Tuesday morning, a pigeon approached the corner of Fourth and Elm, waited for the signal, and crossed entirely on foot.</p>
+        <p>The bird could have flown. Everyone present understood this. Nevertheless, it continued at an even pace while traffic remained respectfully still.</p>
+        <blockquote>“It seemed committed to the process.”</blockquote>
+        <p>Members of the transportation committee continued to hold their positions while the crossing was completed.</p>
+        <p>Asked whether the event would affect policy, a city spokesperson said there was currently no policy concerning pedestrian birds.</p>
+      </div>
+    </article>`;
 }
 
-function holdOn() {
-  const scene = section();
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "hold-button";
-  button.textContent = "hold on";
-  let start = 0;
-  let frame = 0;
-  let completed = false;
+function correctionArticle() {
+  return `
+    <article class="article corrections-article">
+      <p class="section-label">Corrections & clarifications</p>
+      <h1>Several Small Errors That Do Not Change the Larger Truth</h1>
+      <p class="dek">The Daily Ordinary regrets the following inaccuracies.</p>
+      <div class="byline">Updated 10:03 a.m.</div>
+      <div class="article-body">
+        <p>Yesterday’s report described the mayor’s hat as <button class="correction-word" data-order="2">umbrella</button>. It was, in fact, burgundy.</p>
+        <p>The annual pavement festival was said to <button class="correction-word" data-order="0">search</button> on Friday. It begins on Thursday.</p>
+        <p>A photograph of a decorative shrub was mistakenly credited <button class="correction-word" data-order="1">for</button> the shrub itself.</p>
+        <p>We remain confident that all unrelated portions of these stories were mostly accurate.</p>
+      </div>
+      <aside class="correction-tray"><span>Corrections</span><p></p></aside>
+    </article>`;
+}
 
-  const tick = (time) => {
-    if (!start) start = time;
-    const progress = Math.min((time - start) / 2200, 1);
-    button.style.setProperty("--hold", progress);
-    if (progress === 1) {
-      completed = true;
-      advance(scene);
-      return;
-    }
-    frame = requestAnimationFrame(tick);
-  };
+function searchResults() {
+  const results = [
+    ["Umbrella Left Open Indoors Has No Immediate Effect", "12 minutes ago"],
+    ["Council Debates Seasonal Awning Vocabulary", "34 minutes ago"],
+    ["Rain Continues to Fall Primarily Downward", "61 minutes ago"],
+    ["Seven Uses for a Dry Towel", "1 hour ago"]
+  ];
+  return `
+    <section class="results">
+      <p class="section-label">Search</p>
+      <h1>Results for “umbrella”</h1>
+      <div class="result-list">
+        ${results.map(([title, time], index) => `<button type="button" class="result-card" data-result="${index}"><span>${time}</span><strong>${title}</strong><small>Reporting from somewhere nearby.</small></button>`).join("")}
+      </div>
+    </section>`;
+}
+
+function impossibleArticle() {
+  return `
+    <article class="article">
+      <p class="section-label">Weather adjacent</p>
+      <h1>Rain Continues to Fall Primarily Downward</h1>
+      <p class="dek">Researchers say the familiar direction remains the favorite.</p>
+      <div class="byline">By Cliff Forecast <span>·</span> 61 minutes ago</div>
+      <div class="article-body">
+        <p>Rain observed across the county maintained its traditional relationship with gravity throughout the afternoon.</p>
+        <p>Readers seeking tomorrow’s conditions may find the forecast nearby, although advertising has recently occupied much of the available atmosphere.</p>
+      </div>
+    </article>`;
+}
+
+function nightArticle() {
+  return `
+    <article class="article night-article">
+      <p class="section-label">After hours</p>
+      <h1>The Office Is Empty, but One Desk Lamp Remains On</h1>
+      <p class="dek">Facilities insists someone will deal with it in the morning.</p>
+      <div class="byline">11:48 p.m.</div>
+      <figure class="night-window"><span>put the latest first</span></figure>
+      <div class="article-body">
+        <p>From the street, the fourth-floor window appears ordinary until the surrounding offices go dark.</p>
+        <p>No employee has claimed responsibility for the light. It continues to illuminate one chair, two folders, and a mug reading “Adequate.”</p>
+      </div>
+    </article>`;
+}
+
+function renderUpdates() {
+  const updates = state.sorted
+    ? [["2 min", "Bus arrives"], ["4 min", "Bus departs"], ["11 min", "Bench remains"]]
+    : [["11 min", "Bench remains"], ["2 min", "Bus arrives"], ["4 min", "Bus departs"]];
+  document.querySelector(".update-list").innerHTML = updates.map(([time, text]) => `<p><time>${time}</time><span>${text}</span></p>`).join("");
+}
+
+function renderSideMenu() {
+  const menu = document.querySelector(".side-menu");
+  if (state.step < 4) {
+    menu.innerHTML = '<p class="rail-note">A weekly window into daily life.</p>';
+    return;
+  }
+  const items = [["Local", 4], ["Weather", 8], ["Culture", 12], ["Transit", 15], ["Science", 20]];
+  menu.innerHTML = '<h2>Sections</h2>' + items.map(([name, count]) => `<button type="button" data-count="${count}"><span>${name}</span><small>${count}</small></button>`).join("");
+  if (state.step === 4) {
+    menu.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => {
+      Number(button.dataset.count) === 15 ? advance(5) : shake(menu);
+    }));
+  }
+}
+
+function wireHoldMore() {
+  const button = document.querySelector(".more-button");
+  if (state.step !== 3) return;
+  let timer;
+  let start;
+  const fill = document.createElement("i");
+  button.append(fill);
   const begin = (event) => {
-    if (event.type === "keydown" && ![" ", "Enter"].includes(event.key)) return;
     event.preventDefault();
-    start = 0;
+    start = performance.now();
     button.classList.add("holding");
-    cancelAnimationFrame(frame);
-    frame = requestAnimationFrame(tick);
+    const draw = () => {
+      const progress = Math.min((performance.now() - start) / 1800, 1);
+      button.style.setProperty("--hold", progress);
+      if (progress === 1) {
+        advance(4);
+        return;
+      }
+      timer = requestAnimationFrame(draw);
+    };
+    timer = requestAnimationFrame(draw);
   };
-  const end = (event) => {
-    if (event.type === "keyup" && ![" ", "Enter"].includes(event.key)) return;
-    if (completed) return;
-    cancelAnimationFrame(frame);
-    start = 0;
+  const cancel = () => {
+    cancelAnimationFrame(timer);
     button.classList.remove("holding");
     button.style.setProperty("--hold", 0);
   };
   button.addEventListener("pointerdown", begin);
-  button.addEventListener("pointerup", end);
-  button.addEventListener("pointerleave", end);
-  button.addEventListener("pointercancel", end);
-  button.addEventListener("keydown", begin);
-  button.addEventListener("keyup", end);
-  scene.append(button);
-  return scene;
+  button.addEventListener("pointerup", cancel);
+  button.addEventListener("pointerleave", cancel);
 }
 
-function rememberLights() {
-  const scene = section();
-  const lights = document.createElement("div");
-  lights.className = "lights";
-  const colors = ["#d95b55", "#e5bc45", "#4c9fd6", "#55ae74"];
-  const sequence = [2, 0, 3, 1];
-  let input = [];
-  let showing = true;
-
-  colors.forEach((color, index) => {
-    const light = document.createElement("button");
-    light.type = "button";
-    light.className = "light";
-    light.style.setProperty("--light", color);
-    light.setAttribute("aria-label", `Light ${index + 1}`);
-    light.addEventListener("click", () => {
-      if (showing) return;
-      light.classList.add("lit");
-      window.setTimeout(() => light.classList.remove("lit"), 150);
-      input.push(index);
-      if (input[input.length - 1] !== sequence[input.length - 1]) {
-        input = [];
-        shake(lights);
-        window.setTimeout(play, 500);
-      } else if (input.length === sequence.length) {
-        advance(scene);
-      }
-    });
-    lights.append(light);
-  });
-
-  async function play() {
-    showing = true;
-    input = [];
-    await wait(450);
-    for (const index of sequence) {
-      const light = lights.children[index];
-      light.classList.add("lit");
-      await wait(360);
-      light.classList.remove("lit");
-      await wait(180);
+function wireCorrections() {
+  if (state.step !== 5) return;
+  const tray = document.querySelector(".correction-tray p");
+  const selected = [];
+  document.querySelectorAll(".correction-word").forEach((button) => button.addEventListener("click", () => {
+    const expected = selected.length;
+    if (Number(button.dataset.order) !== expected) {
+      selected.length = 0;
+      tray.textContent = "";
+      document.querySelectorAll(".correction-word").forEach((word) => word.disabled = false);
+      shake(document.querySelector(".corrections-article"));
+      return;
     }
-    showing = false;
+    selected.push(button.textContent);
+    button.disabled = true;
+    tray.textContent = selected.join(" ");
+    if (selected.length === 3) advance(6, 700);
+  }));
+}
+
+function wireSearch() {
+  const form = document.querySelector(".site-search");
+  const input = form.querySelector("input");
+  if (state.step >= 6) {
+    form.classList.add("available");
+    input.value = state.step === 6 ? "" : "umbrella";
   }
-  scene.append(lights);
-  play();
-  return scene;
-}
-
-function makeSentence() {
-  const scene = section();
-  const line = document.createElement("p");
-  const slots = document.createElement("div");
-  const bank = document.createElement("div");
-  const chosen = [];
-  line.className = "line";
-  line.textContent = "Everything has its place.";
-  slots.className = "sentence";
-  bank.className = "word-bank";
-  for (let index = 0; index < 4; index += 1) {
-    const slot = document.createElement("span");
-    slot.className = "slot";
-    slots.append(slot);
-  }
-
-  const reset = () => {
-    chosen.length = 0;
-    [...slots.children].forEach((slot) => slot.textContent = "");
-    [...bank.children].forEach((button) => button.disabled = false);
-  };
-  ["LIGHTS", "TURN", "THE", "OUT"].forEach((word) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "word";
-    button.textContent = word;
-    button.addEventListener("click", () => {
-      slots.children[chosen.length].textContent = word;
-      chosen.push(word);
-      button.disabled = true;
-      if (chosen.length === 4 && chosen.join(" ") === "TURN OUT THE LIGHTS") advance(scene);
-      else if (chosen.length === 4) {
-        shake(slots);
-        window.setTimeout(reset, 500);
-      }
-    });
-    bank.append(button);
-  });
-  scene.append(line, slots, bank);
-  return scene;
-}
-
-function switchLights() {
-  const scene = section();
-  const control = document.createElement("label");
-  control.className = "switch";
-  control.innerHTML = '<input type="checkbox"><i aria-hidden="true"></i><span>lights</span>';
-  control.querySelector("input").addEventListener("change", () => {
-    document.body.classList.add("night");
-    document.querySelector('meta[name="theme-color"]').content = "#080a11";
-    window.setTimeout(() => advance(scene), 900);
-  });
-  scene.append(control);
-  return scene;
-}
-
-function stars() {
-  const scene = section();
-  const field = document.createElement("div");
-  field.className = "stars";
-  const points = [
-    [8, 18, 5], [29, 62, 4], [47, 25, 6], [72, 12, 4], [88, 53, 5],
-    [15, 78, 4], [39, 82, 5], [65, 69, 5], [79, 88, 4]
-  ];
-  points.forEach(([x, y, size], index) => {
-    const star = document.createElement("button");
-    star.type = "button";
-    star.className = index === 6 ? "star odd" : "star";
-    star.style.left = `${x}%`;
-    star.style.top = `${y}%`;
-    star.style.setProperty("--size", `${size}px`);
-    star.setAttribute("aria-label", "Star");
-    if (index === 6) star.addEventListener("click", () => advance(scene));
-    field.append(star);
-  });
-  scene.append(field);
-  return scene;
-}
-
-function findBalance() {
-  const scene = section();
-  const balance = document.createElement("div");
-  balance.className = "balance";
-  balance.innerHTML = '<div class="beam"><span class="weight"></span><span class="weight"></span></div><input type="range" min="0" max="100" value="20" aria-label="Balance">';
-  const beam = balance.querySelector(".beam");
-  const input = balance.querySelector("input");
-  let timer;
-  const update = () => {
-    const difference = Number(input.value) - 68;
-    beam.style.setProperty("--tilt", `${difference / 5}deg`);
-    window.clearTimeout(timer);
-    if (difference === 0) timer = window.setTimeout(() => advance(scene), 650);
-  };
-  input.addEventListener("input", update);
-  scene.append(balance);
-  update();
-  return scene;
-}
-
-function findKeys() {
-  const scene = section();
-  const collection = document.createElement("div");
-  const line = document.createElement("p");
-  const input = document.createElement("input");
-  const objects = document.createElement("div");
-  const things = ["anchor", "bottle", "candle", "compass", "feather", "hammer", "keyboard", "lantern", "mirror", "notebook", "watch", "rope"];
-  collection.className = "collection";
-  line.className = "line";
-  line.textContent = "keys, but no locks.";
-  input.type = "search";
-  input.autocomplete = "off";
-  input.setAttribute("aria-label", "Search");
-  objects.className = "objects";
-  const draw = () => {
-    const query = input.value.trim().toLowerCase();
-    objects.replaceChildren();
-    things.filter((thing) => thing.includes(query)).forEach((thing) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "object";
-      button.textContent = thing;
-      if (thing === "keyboard" && query) button.addEventListener("click", () => advance(scene));
-      objects.append(button);
-    });
-  };
-  input.addEventListener("input", draw);
-  collection.append(line, input, objects);
-  scene.append(collection);
-  draw();
-  return scene;
-}
-
-function finalQuestion() {
-  const scene = section();
-  const form = document.createElement("form");
-  form.className = "last-form";
-  form.innerHTML = '<p class="line">What opened every lock?</p><input autocomplete="off" aria-label="Answer">';
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    const answer = normalize(form.querySelector("input").value);
-    ["page", "the page", "website", "the website", "site", "the site"].includes(answer)
-      ? advance(scene)
+    if (state.step !== 6) return;
+    normalize(input.value) === "search for umbrella" || normalize(input.value) === "umbrella"
+      ? advance(7)
       : shake(form);
   });
-  scene.append(form);
-  form.querySelector("input").focus();
-  return scene;
 }
 
-function ending() {
-  const scene = section("end");
-  scene.innerHTML = '<p class="line">You were never trapped.<br>The page was.</p>';
-  return scene;
+function renderAdvertisement() {
+  const slot = document.querySelector(".ad-slot");
+  if (state.step < 8) {
+    slot.innerHTML = '<p class="ad-label">Advertisement</p><strong>PLAIN CRACKERS</strong><span>Now with corners.</span>';
+    return;
+  }
+  slot.innerHTML = '<button class="forecast-link" type="button">Tomorrow’s forecast</button><div class="movable-ad"><p class="ad-label">Advertisement</p><strong>UMBRELLA PLUS</strong><span>For rain that means business.</span><button type="button" aria-label="Close advertisement">×</button></div>';
+  if (state.step !== 8) {
+    slot.querySelector(".movable-ad").classList.add("moved");
+    return;
+  }
+
+  const ad = slot.querySelector(".movable-ad");
+  let origin;
+  const move = (event) => {
+    if (!origin) return;
+    const x = event.clientX - origin.x;
+    const y = event.clientY - origin.y;
+    if (Math.abs(x) + Math.abs(y) > 35) ad.classList.add("moved");
+    ad.style.transform = `translate(${x}px, ${y}px) rotate(-2deg)`;
+  };
+  ad.addEventListener("pointerdown", (event) => {
+    origin = { x: event.clientX, y: event.clientY };
+    ad.setPointerCapture(event.pointerId);
+  });
+  ad.addEventListener("pointermove", move);
+  ad.addEventListener("pointerup", () => origin = null);
+  ad.querySelector("button").addEventListener("click", () => shake(ad));
+  slot.querySelector(".forecast-link").addEventListener("click", () => {
+    if (ad.classList.contains("moved")) advance(9);
+  });
 }
 
-const renderers = [greeting, below, holdOn, rememberLights, makeSentence, switchLights, stars, findBalance, findKeys, finalQuestion, ending];
-
-function renderStep(step) {
-  if (step >= 7) document.body.classList.add("night");
-  return renderers[step - 1]();
+function wireNight() {
+  const toggle = document.querySelector(".theme-switch input");
+  if (state.step >= 10 || document.body.classList.contains("night")) toggle.checked = true;
+  toggle.addEventListener("change", () => {
+    document.body.classList.toggle("night", toggle.checked);
+    document.querySelector('meta[name="theme-color"]').content = toggle.checked ? "#101b2b" : "#f5f2e8";
+  });
+  if (state.step === 9) {
+    const secret = document.querySelector(".night-window span");
+    secret.addEventListener("click", () => {
+      if (document.body.classList.contains("night")) advance(10);
+    });
+  }
 }
 
-function renderSavedGame() {
-  page.replaceChildren();
-  for (let step = 1; step < state.step; step += 1) renderEcho(step);
-  renderStep(state.step);
+function wireFinale() {
+  const sort = document.querySelector(".sort-button");
+  const brand = document.querySelector(".brand");
+  if (state.step !== 10) return;
+  sort.addEventListener("click", () => {
+    state.sorted = true;
+    save();
+    renderUpdates();
+    brand.classList.add("ready");
+  });
+  if (state.sorted) brand.classList.add("ready");
+  brand.addEventListener("click", () => {
+    if (state.sorted) advance(11);
+  });
+}
+
+function renderPublication() {
+  page.className = "";
+  page.innerHTML = shellMarkup();
+  document.title = "The Daily Ordinary";
+  if (state.step >= 10) document.body.classList.add("night");
+  else document.body.classList.remove("night");
+
+  const articleArea = document.querySelector(".article-area");
+  if (state.step === 5 || state.step === 6) articleArea.innerHTML = correctionArticle();
+  else if (state.step === 7) articleArea.innerHTML = searchResults();
+  else if (state.step === 8) articleArea.innerHTML = impossibleArticle();
+  else if (state.step >= 9 && state.step <= 10) articleArea.innerHTML = nightArticle();
+  else if (state.step === 11) articleArea.innerHTML = '<section class="finished"><p>Nothing else happened.</p><h1>You may go.</h1><span>The page looks almost disappointed.</span></section>';
+  else articleArea.innerHTML = ordinaryArticle();
+
+  renderSideMenu();
+  renderUpdates();
+  renderAdvertisement();
+  wireHoldMore();
+  wireCorrections();
+  wireSearch();
+  wireNight();
+  wireFinale();
+
+  if (state.step === 7) {
+    document.querySelectorAll(".result-card").forEach((button) => button.addEventListener("click", () => {
+      button.dataset.result === "2" ? advance(8) : shake(button);
+    }));
+  }
+}
+
+function render() {
+  state.step < 3 ? renderOpening() : renderPublication();
 }
 
 document.querySelector("#reset").addEventListener("click", () => resetDialog.showModal());
 document.querySelector("#cancel-reset").addEventListener("click", () => resetDialog.close());
 document.querySelector("#confirm-reset").addEventListener("click", () => {
   localStorage.removeItem(STORAGE_KEY);
-  state = { step: 1, started: Date.now() };
+  state = { step: 1, started: Date.now(), sorted: false };
   document.body.classList.remove("night");
   document.querySelector('meta[name="theme-color"]').content = "#f2f0e9";
   resetDialog.close();
-  renderSavedGame();
+  render();
 });
 
-renderSavedGame();
+render();
