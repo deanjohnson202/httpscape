@@ -153,6 +153,60 @@ body.night .night-window span { color:#ffe9a1; opacity:.9; text-shadow:0 0 12px 
 .finished h1 { margin:.5rem 0; font-size:clamp(3rem,8vw,6rem); letter-spacing:-.06em; }
 .finished span { color:var(--muted); }
 
+.publication.escaping {
+  position: relative;
+  z-index: 2;
+  animation: page-leaves 2.7s .35s cubic-bezier(.62,.01,.72,.42) forwards;
+  will-change: transform;
+}
+.escape-scene {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.escape-person {
+  position: absolute;
+  bottom: 11vh;
+  left: 48vw;
+  width: 86px;
+  opacity: 0;
+  transform-origin: center bottom;
+}
+.escape-person svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.person-head { fill: var(--paper); }
+.person-arm, .person-leg { transform-box: fill-box; transform-origin: top center; }
+.escape-scene.playing .escape-person { animation: person-escapes 4.4s .15s ease-in-out forwards; }
+.escape-scene.playing .arm-left,
+.escape-scene.playing .leg-right { animation: stride-a .38s .2s ease-in-out 7 alternate, retire-arm 4.4s .15s step-end forwards; }
+.escape-scene.playing .arm-right,
+.escape-scene.playing .leg-left { animation: stride-b .38s .2s ease-in-out 7 alternate, retire-arm 4.4s .15s step-end forwards; }
+.thumb-arm { opacity: 0; transform-box: fill-box; transform-origin: left bottom; }
+.escape-scene.playing .thumb-arm { animation: thumbs-up 4.4s .15s ease-out forwards; }
+.escape-message {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 7vh;
+  margin: 0;
+  color: var(--ink);
+  text-align: center;
+  font-size: clamp(1.5rem,4vw,2.6rem);
+  font-style: italic;
+  opacity: 0;
+}
+.escape-scene.playing .escape-message { animation: final-words .7s 4s ease forwards; }
+
 dialog { width:min(300px,calc(100% - 2rem)); padding:1.4rem; border:1px solid var(--line); color:var(--ink); background:var(--paper); text-align:center; }
 dialog::backdrop { background:#0008; }
 dialog div { display:flex; justify-content:center; gap:.7rem; }
@@ -161,6 +215,25 @@ dialog button { min-width:70px; padding:.55rem; border:1px solid var(--line); ba
 @keyframes reveal { from { opacity:0; transform:scale(.99); } }
 @keyframes shake { 25% { transform:translateX(-5px); } 75% { transform:translateX(5px); } }
 @keyframes breathe { 50% { opacity:.55; } }
+@keyframes page-leaves {
+  0% { transform:translateX(0); box-shadow:0 0 0 #0000; }
+  100% { transform:translateX(112vw) rotate(1.5deg); box-shadow:-30px 0 70px #0004; }
+}
+@keyframes person-escapes {
+  0% { opacity:0; transform:translateX(28vw) scaleX(1); }
+  8% { opacity:1; }
+  64% { opacity:1; transform:translateX(-24vw) scaleX(1); }
+  73% { transform:translateX(-24vw) scaleX(-1); }
+  100% { opacity:1; transform:translateX(-24vw) scaleX(-1); }
+}
+@keyframes stride-a { from { transform:rotate(24deg); } to { transform:rotate(-24deg); } }
+@keyframes stride-b { from { transform:rotate(-24deg); } to { transform:rotate(24deg); } }
+@keyframes retire-arm { 0%,72% { opacity:1; } 73%,100% { opacity:0; } }
+@keyframes thumbs-up {
+  0%,72% { opacity:0; transform:rotate(-25deg); }
+  79%,100% { opacity:1; transform:rotate(0); }
+}
+@keyframes final-words { to { opacity:1; } }
 
 @media(max-width:900px) {
   .site-grid { grid-template-columns:170px minmax(0,1fr); }
@@ -188,4 +261,10 @@ dialog button { min-width:70px; padding:.55rem; border:1px solid var(--line); ba
 @media(prefers-reduced-motion:reduce) {
   * { scroll-behavior:auto!important; transition-duration:.01ms!important; }
   .publication { animation:none; }
+  .publication.escaping { visibility:hidden; }
+  .escape-scene.playing .escape-person { left:calc(50% - 43px); opacity:1; transform:scaleX(-1); animation:none; }
+  .escape-scene.playing .person-arm,.escape-scene.playing .person-leg { animation:none; }
+  .escape-scene.playing .arm-right { opacity:0; }
+  .escape-scene.playing .thumb-arm { opacity:1; animation:none; }
+  .escape-scene.playing .escape-message { opacity:1; animation:none; }
 }

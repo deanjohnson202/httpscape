@@ -73,8 +73,8 @@ await solve("const ad=document.querySelector('.movable-ad');ad.classList.add('mo
 await solve("document.querySelector('.theme-switch input').click();document.querySelector('.night-window span').click()", 10);
 await solve("document.querySelector('.sort-button').click();document.querySelector('.brand').click()", 11);
 
-const ending = await evaluate("document.querySelector('.finished').textContent");
-if (!ending.includes("You may go")) throw new Error(`Unexpected ending: ${ending}`);
+const ending = await evaluate("document.querySelector('.escape-message').textContent");
+if (!ending.includes("out")) throw new Error(`Unexpected ending: ${ending}`);
 await command("Page.reload", { ignoreCache: true });
 await delay(700);
 const reloadedStep = await evaluate("Number(document.body.dataset.step)");

@@ -338,7 +338,39 @@ function wireFinale() {
   });
   if (state.sorted) brand.classList.add("ready");
   brand.addEventListener("click", () => {
-    if (state.sorted) advance(11);
+    if (state.sorted) playEscape();
+  });
+}
+
+function playEscape() {
+  state.step = 11;
+  document.body.dataset.step = 11;
+  const publication = document.querySelector(".publication");
+  const escapeScene = document.createElement("div");
+  escapeScene.className = "escape-scene";
+  escapeScene.setAttribute("role", "status");
+  escapeScene.setAttribute("aria-label", "You escaped.");
+  escapeScene.innerHTML = `
+    <div class="escape-person" aria-hidden="true">
+      <svg viewBox="0 0 100 170">
+        <circle class="person-head" cx="50" cy="25" r="17"></circle>
+        <path class="person-body" d="M50 42 L50 103"></path>
+        <path class="person-arm arm-left" d="M50 57 L24 84"></path>
+        <path class="person-arm arm-right" d="M50 57 L77 82"></path>
+        <path class="person-leg leg-left" d="M50 102 L27 145"></path>
+        <path class="person-leg leg-right" d="M50 102 L75 145"></path>
+        <g class="thumb-arm">
+          <path d="M50 59 L73 44 L85 24"></path>
+          <path d="M85 24 L84 9"></path>
+          <path d="M85 24 L95 18"></path>
+        </g>
+      </svg>
+    </div>
+    <p class="escape-message">You’re out.</p>`;
+  document.body.append(escapeScene);
+  requestAnimationFrame(() => {
+    publication.classList.add("escaping");
+    escapeScene.classList.add("playing");
   });
 }
 
@@ -354,7 +386,7 @@ function renderPublication() {
   else if (state.step === 7) articleArea.innerHTML = searchResults();
   else if (state.step === 8) articleArea.innerHTML = impossibleArticle();
   else if (state.step >= 9 && state.step <= 10) articleArea.innerHTML = nightArticle();
-  else if (state.step === 11) articleArea.innerHTML = '<section class="finished"><p>Nothing else happened.</p><h1>You may go.</h1><span>The page looks almost disappointed.</span></section>';
+  else if (state.step === 11) articleArea.innerHTML = '<section class="finished"><h1>You’re out.</h1></section>';
   else articleArea.innerHTML = ordinaryArticle();
 
   renderSideMenu();
@@ -382,6 +414,7 @@ document.querySelector("#reset").addEventListener("click", () => resetDialog.sho
 document.querySelector("#cancel-reset").addEventListener("click", () => resetDialog.close());
 document.querySelector("#confirm-reset").addEventListener("click", () => {
   state = { step: 1, started: Date.now(), sorted: false };
+  document.querySelector(".escape-scene")?.remove();
   document.body.classList.remove("night");
   document.querySelector('meta[name="theme-color"]').content = "#f2f0e9";
   resetDialog.close();
