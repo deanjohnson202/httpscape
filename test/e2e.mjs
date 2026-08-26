@@ -55,27 +55,28 @@ async function evaluate(expression) {
 
 async function solve(expression, expectedRoom) {
   await evaluate(expression);
-  await delay(950);
-  const room = await evaluate("JSON.parse(localStorage.getItem('httpscape-progress-v1')).room");
-  if (room !== expectedRoom) throw new Error(`Expected room ${expectedRoom}, received ${room}.`);
+  await delay(1700);
+  const room = await evaluate("JSON.parse(localStorage.getItem('httpscape-progress-v2')).step");
+  if (room !== expectedRoom) throw new Error(`Expected step ${expectedRoom}, received ${room}.`);
 }
 
 await command("Runtime.enable");
 await delay(300);
-await solve("document.querySelector('#greeting').value='hello';document.querySelector('#stage form').requestSubmit()", 2);
-await solve("document.querySelector('#stage button').click()", 3);
-await solve("document.querySelectorAll('#stage button')[1].click()", 4);
-await solve("document.querySelector('#stage input').value=25;document.querySelector('#stage button').click()", 5);
-await solve("for(const word of ['TURN','OFF','THE','LIGHTS'])[...document.querySelectorAll('#stage button')].find(b=>b.textContent===word).click()", 6);
-await solve("document.querySelector('#stage input').click();document.querySelector('.secret').click()", 7);
-await solve("for(const word of ['First','Second','Third','Last'])[...document.querySelectorAll('#stage button')].find(b=>b.textContent===word).click()", 8);
-await solve("const i=document.querySelector('#stage input');i.value='keyboard';i.dispatchEvent(new Event('input'));[...document.querySelectorAll('.object')].find(b=>b.textContent==='Keyboard').click()", 9);
-await solve("const s=document.querySelector('#stage select');s.value='East';for(const c of document.querySelectorAll('[type=checkbox]'))c.checked=c.value==='moon';document.querySelector('[value=safe]').checked=true;s.dispatchEvent(new Event('change'))", 10);
-await solve("document.querySelector('#answer').value='the page was the key';document.querySelector('#stage form').requestSubmit()", 11);
+await solve("const f=document.querySelector('.entry');f.querySelector('input').value='hello';f.requestSubmit()", 2);
+await solve("document.querySelector('.green-button').click()", 3);
+await solve("new Promise(resolve=>{const b=document.querySelector('.hold-button');b.dispatchEvent(new PointerEvent('pointerdown'));setTimeout(()=>{b.dispatchEvent(new PointerEvent('pointerup'));resolve()},2400)})", 4);
+await delay(2800);
+await solve("for(const i of [2,0,3,1])document.querySelectorAll('.light')[i].click()", 5);
+await solve("for(const word of ['TURN','OUT','THE','LIGHTS'])[...document.querySelectorAll('.word')].find(b=>b.textContent===word).click()", 6);
+await solve("document.querySelector('.switch input').click()", 7);
+await solve("document.querySelector('.star.odd').click()", 8);
+await solve("const slider=document.querySelector('.balance input');slider.value=68;slider.dispatchEvent(new Event('input'))", 9);
+await solve("const search=document.querySelector('.collection input');search.value='keyboard';search.dispatchEvent(new Event('input'));[...document.querySelectorAll('.object')].find(b=>b.textContent==='keyboard').click()", 10);
+await solve("const finalForm=document.querySelector('.last-form');finalForm.querySelector('input').value='page';finalForm.requestSubmit()", 11);
 
-const title = await evaluate("document.querySelector('#title').textContent");
-if (title !== "You escaped.") throw new Error(`Unexpected final title: ${title}`);
-console.log("Passed: all 10 rooms completed in headless Edge.");
+const ending = await evaluate("document.querySelector('.end').textContent");
+if (!ending.includes("The page was")) throw new Error(`Unexpected ending: ${ending}`);
+console.log("Passed: the complete evolving-page sequence in headless Edge.");
 await command("Browser.close");
 socket.close();
 browser.kill();

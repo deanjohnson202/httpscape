@@ -3,24 +3,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#09110e">
-  <meta name="description" content="HTTPscape — an escape room hidden inside a website.">
-  <title>HTTPscape</title>
+  <meta name="theme-color" content="#f2f0e9">
+  <meta name="description" content="A page with something to say.">
+  <title> </title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header>
-    <div class="logo">HTTP<span>scape</span></div>
-    <div class="actions"><span id="status" class="status"></span><button id="hint" class="plain">Hint</button><button id="reset" class="plain">Reset</button></div>
-  </header>
-  <div class="track"><div id="bar"></div></div>
-  <main id="game" tabindex="-1">
-    <p id="number" class="eyebrow"></p><h1 id="title"></h1><p id="prompt" class="prompt"></p>
-    <section id="stage" aria-live="polite"></section><p id="feedback" role="status" aria-live="polite"></p>
-  </main>
-  <dialog id="hint-box"><p class="eyebrow">A small nudge</p><h2>Hint</h2><p id="hint-text"></p><div class="dialog-actions"><button id="more-hint" class="button alt">Another hint</button><button id="close-hint" class="button">Back</button></div></dialog>
-  <dialog id="reset-box"><h2>Reset your escape?</h2><p>This clears your saved progress and returns to room one.</p><div class="dialog-actions"><button id="cancel-reset" class="button alt">Keep playing</button><button id="confirm-reset" class="button red">Reset</button></div></dialog>
-  <footer>Your progress is saved only in this browser.</footer>
+  <button id="reset" class="reset" type="button" aria-label="Start over" title="Start over">↺</button>
+  <main id="page" aria-live="polite"></main>
+  <dialog id="reset-dialog">
+    <p>Start over?</p>
+    <div>
+      <button id="cancel-reset" type="button">No</button>
+      <button id="confirm-reset" type="button">Yes</button>
+    </div>
+  </dialog>
   <script src="app.js"></script>
 </body>
 </html>

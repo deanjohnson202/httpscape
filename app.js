@@ -1,306 +1,361 @@
-const $ = (selector) => document.querySelector(selector);
-const stage = $("#stage");
-const feedback = $("#feedback");
-const game = $("#game");
-const STORAGE_KEY = "httpscape-progress-v1";
-const TOTAL_ROOMS = 10;
+const page = document.querySelector("#page");
+const resetDialog = document.querySelector("#reset-dialog");
+const STORAGE_KEY = "httpscape-progress-v2";
+const LAST_STEP = 11;
 
-let state = { room: 1, started: Date.now(), hints: 0 };
-let roomHints = [];
-let hintIndex = 0;
-
+let state = { step: 1, started: Date.now() };
 try {
   const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-  if (saved && Number.isInteger(saved.room) && saved.room > 0 && saved.room <= 11) state = saved;
+  if (saved && Number.isInteger(saved.step) && saved.step >= 1 && saved.step <= LAST_STEP) state = saved;
 } catch {}
 
 const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-const normalize = (text) => text.toLowerCase().trim().replace(/[.!?,]+$/g, "").replace(/\s+/g, " ");
+const normalize = (value) => value.toLowerCase().trim().replace(/[.!?,]+$/g, "").replace(/\s+/g, " ");
+const wait = (milliseconds) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 
-function createButton(text, kind = "") {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = `button ${kind}`;
-  button.textContent = text;
-  return button;
+function section(className = "") {
+  const element = document.createElement("section");
+  element.className = `scene ${className}`.trim();
+  page.append(element);
+  return element;
 }
 
-function setupRoom(title, prompt, hints) {
-  $("#number").textContent = state.room <= TOTAL_ROOMS ? `Room ${state.room}` : "Escape complete";
-  $("#title").textContent = title;
-  $("#prompt").textContent = prompt;
-  $("#status").textContent = state.room <= TOTAL_ROOMS ? `Room ${state.room} of ${TOTAL_ROOMS}` : "Escaped";
-  $("#bar").style.width = `${Math.min(state.room - 1, TOTAL_ROOMS) * 10}%`;
-  $("#hint").hidden = state.room > TOTAL_ROOMS;
-  stage.replaceChildren();
-  feedback.textContent = "";
-  feedback.className = "";
-  roomHints = hints;
-  hintIndex = 0;
-  document.body.classList.remove("dark");
-  window.scrollTo({ top: 0, behavior: "instant" });
+function shake(element) {
+  element.classList.remove("shake");
+  void element.offsetWidth;
+  element.classList.add("shake");
 }
 
-function showFeedback(message, success = false) {
-  feedback.textContent = message;
-  feedback.className = success ? "good" : "";
-}
-
-function completeRoom(message) {
-  showFeedback(message, true);
-  stage.querySelectorAll("button, input, select").forEach((control) => control.disabled = true);
+function advance(current) {
+  current.querySelectorAll("button, input").forEach((control) => control.disabled = true);
+  state.step += 1;
+  save();
   window.setTimeout(() => {
-    state.room += 1;
-    save();
-    render();
-    game.focus();
-  }, 800);
+    const next = renderStep(state.step);
+    next.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, 550);
 }
 
-function room1() {
-  setupRoom("Is anyone there?", "The page is listening, but it does not know you yet.", [
-    "Start as you would with a person.",
-    "Try a friendly greeting.",
-    "Type “hello” and press Send."
-  ]);
+const echoes = [
+  "",
+  "hello.",
+  "●",
+  "held.",
+  "four lights remember.",
+  "turn out the lights.",
+  "darkness.",
+  "one star was awake.",
+  "balance.",
+  "keys without locks.",
+  "the page."
+];
+
+function renderEcho(step) {
+  const echo = section("echo");
+  echo.textContent = echoes[step];
+}
+
+function greeting() {
+  const scene = section();
   const form = document.createElement("form");
-  form.className = "row";
-  form.innerHTML = '<label class="sr-only" for="greeting">Your message</label><input id="greeting" autocomplete="off" placeholder="Type something…"><button class="button">Send</button>';
+  form.className = "entry";
+  form.innerHTML = '<label class="sr-only" for="greeting">Message</label><input id="greeting" autocomplete="off" aria-label="Message"><button>Send</button>';
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    const greetings = ["hello", "hi", "hey", "hiya", "howdy", "greetings", "good morning", "good afternoon", "good evening"];
-    greetings.includes(normalize($("#greeting").value))
-      ? completeRoom("Hello. Now we can begin.")
-      : showFeedback("The page remains silent. Perhaps begin more politely.");
+    const accepted = ["hello", "hi", "hey", "hiya", "howdy", "greetings", "good morning", "good afternoon", "good evening"];
+    if (accepted.includes(normalize(form.querySelector("input").value))) advance(scene);
+    else shake(form);
   });
-  stage.append(form);
-  $("#greeting").focus();
+  scene.append(form);
+  form.querySelector("input").focus();
+  return scene;
 }
 
-function room2() {
-  setupRoom("Look beyond what you can see", "Some answers are not hidden. They are simply farther away.", [
-    "There is more than the first screen.",
-    "Travel toward the bottom of the page.",
-    "Scroll down and press the green button."
-  ]);
-  const trail = document.createElement("div");
-  trail.className = "scroll-trail";
-  trail.innerHTML = "<p>keep going</p><p>pages have edges</p><p>almost there</p>";
-  const button = createButton("Continue");
-  button.addEventListener("click", () => completeRoom("You found the bottom."));
-  trail.append(button);
-  stage.append(trail);
+function below() {
+  const scene = section("descent");
+  scene.innerHTML = '<p class="line">You know just what buttons to push.</p>';
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "green-button";
+  button.setAttribute("aria-label", "Green button");
+  button.addEventListener("click", () => advance(scene));
+  scene.append(button);
+  return scene;
 }
 
-function room3() {
-  setupRoom("Choose carefully", "Three buttons wait. The quiet one between danger and safety opens the way.", [
-    "Pay attention to position, not color.",
-    "The answer is between the other two.",
-    "Press the middle button."
-  ]);
-  const box = document.createElement("div");
-  box.className = "three";
-  [["DANGER", "red", false], ["…", "alt", true], ["SAFE", "", false]].forEach(([text, kind, correct]) => {
-    const button = createButton(text, kind);
-    button.addEventListener("click", () => correct
-      ? completeRoom("Quiet choices still make noise.")
-      : showFeedback("That button was louder than it was useful."));
-    box.append(button);
+function holdOn() {
+  const scene = section();
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "hold-button";
+  button.textContent = "hold on";
+  let start = 0;
+  let frame = 0;
+  let completed = false;
+
+  const tick = (time) => {
+    if (!start) start = time;
+    const progress = Math.min((time - start) / 2200, 1);
+    button.style.setProperty("--hold", progress);
+    if (progress === 1) {
+      completed = true;
+      advance(scene);
+      return;
+    }
+    frame = requestAnimationFrame(tick);
+  };
+  const begin = (event) => {
+    if (event.type === "keydown" && ![" ", "Enter"].includes(event.key)) return;
+    event.preventDefault();
+    start = 0;
+    button.classList.add("holding");
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(tick);
+  };
+  const end = (event) => {
+    if (event.type === "keyup" && ![" ", "Enter"].includes(event.key)) return;
+    if (completed) return;
+    cancelAnimationFrame(frame);
+    start = 0;
+    button.classList.remove("holding");
+    button.style.setProperty("--hold", 0);
+  };
+  button.addEventListener("pointerdown", begin);
+  button.addEventListener("pointerup", end);
+  button.addEventListener("pointerleave", end);
+  button.addEventListener("pointercancel", end);
+  button.addEventListener("keydown", begin);
+  button.addEventListener("keyup", end);
+  scene.append(button);
+  return scene;
+}
+
+function rememberLights() {
+  const scene = section();
+  const lights = document.createElement("div");
+  lights.className = "lights";
+  const colors = ["#d95b55", "#e5bc45", "#4c9fd6", "#55ae74"];
+  const sequence = [2, 0, 3, 1];
+  let input = [];
+  let showing = true;
+
+  colors.forEach((color, index) => {
+    const light = document.createElement("button");
+    light.type = "button";
+    light.className = "light";
+    light.style.setProperty("--light", color);
+    light.setAttribute("aria-label", `Light ${index + 1}`);
+    light.addEventListener("click", () => {
+      if (showing) return;
+      light.classList.add("lit");
+      window.setTimeout(() => light.classList.remove("lit"), 150);
+      input.push(index);
+      if (input[input.length - 1] !== sequence[input.length - 1]) {
+        input = [];
+        shake(lights);
+        window.setTimeout(play, 500);
+      } else if (input.length === sequence.length) {
+        advance(scene);
+      }
+    });
+    lights.append(light);
   });
-  stage.append(box);
+
+  async function play() {
+    showing = true;
+    input = [];
+    await wait(450);
+    for (const index of sequence) {
+      const light = lights.children[index];
+      light.classList.add("lit");
+      await wait(360);
+      light.classList.remove("lit");
+      await wait(180);
+    }
+    showing = false;
+  }
+  scene.append(lights);
+  play();
+  return scene;
 }
 
-function room4() {
-  setupRoom("Fine adjustment", "Begin at nothing. Stop halfway to fifty.", [
-    "The control runs from 0 to 100.",
-    "Halfway to fifty is less than fifty.",
-    "Move the slider to 25."
-  ]);
-  stage.innerHTML = '<div class="slider"><output>0</output><input type="range" min="0" max="100" value="0" aria-label="Number from zero to one hundred"><button class="button">Lock it in</button></div>';
-  const input = stage.querySelector("input");
-  const output = stage.querySelector("output");
-  input.addEventListener("input", () => output.value = input.value);
-  stage.querySelector("button").addEventListener("click", () => {
-    Number(input.value) === 25
-      ? completeRoom("Exactly a quarter of the way.")
-      : showFeedback(`${input.value} does not satisfy the clue.`);
-  });
-}
-
-function room5() {
-  setupRoom("Put things in order", "The instruction has been broken apart. Rebuild it.", [
-    "Choose the words to form a command.",
-    "The command begins with an action.",
-    "Choose TURN, OFF, THE, LIGHTS."
-  ]);
-  const chosen = [];
+function makeSentence() {
+  const scene = section();
+  const line = document.createElement("p");
+  const slots = document.createElement("div");
   const bank = document.createElement("div");
-  const answer = document.createElement("div");
-  bank.className = "words";
-  answer.className = "answer";
-  answer.textContent = "Choose words in order";
-  ["LIGHTS", "TURN", "THE", "OFF"].forEach((word) => {
-    const button = createButton(word, "word");
+  const chosen = [];
+  line.className = "line";
+  line.textContent = "Everything has its place.";
+  slots.className = "sentence";
+  bank.className = "word-bank";
+  for (let index = 0; index < 4; index += 1) {
+    const slot = document.createElement("span");
+    slot.className = "slot";
+    slots.append(slot);
+  }
+
+  const reset = () => {
+    chosen.length = 0;
+    [...slots.children].forEach((slot) => slot.textContent = "");
+    [...bank.children].forEach((button) => button.disabled = false);
+  };
+  ["LIGHTS", "TURN", "THE", "OUT"].forEach((word) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "word";
+    button.textContent = word;
     button.addEventListener("click", () => {
+      slots.children[chosen.length].textContent = word;
       chosen.push(word);
       button.disabled = true;
-      answer.textContent = chosen.join(" ");
-      if (chosen.join(" ") === "TURN OFF THE LIGHTS") completeRoom("Instruction accepted.");
+      if (chosen.length === 4 && chosen.join(" ") === "TURN OUT THE LIGHTS") advance(scene);
       else if (chosen.length === 4) {
-        showFeedback("That sentence does not make sense. Try again.");
-        window.setTimeout(room5, 650);
+        shake(slots);
+        window.setTimeout(reset, 500);
       }
     });
     bank.append(button);
   });
-  stage.append(bank, answer);
+  scene.append(line, slots, bank);
+  return scene;
 }
 
-function room6() {
-  setupRoom("A different light", "The last instruction was not merely a phrase.", [
-    "This room has a light switch.",
-    "Some writing is easier to see in darkness.",
-    "Turn off the lights, then press the revealed button."
-  ]);
-  const label = document.createElement("label");
-  label.className = "switch";
-  label.innerHTML = '<input type="checkbox"><i aria-hidden="true"></i><strong>Lights</strong>';
-  const secret = createButton("I appear in the dark", "secret");
-  label.querySelector("input").addEventListener("change", (event) => document.body.classList.toggle("dark", event.target.checked));
-  secret.addEventListener("click", () => completeRoom("Darkness can reveal as much as light."));
-  stage.append(label, secret);
-}
-
-function room7() {
-  setupRoom("Read between the tabs", "Every story has an order: first, second, third, last.", [
-    "Open the tabs in the order named.",
-    "A wrong choice resets the sequence.",
-    "Choose First, Second, Third, then Last."
-  ]);
-  const order = [];
-  const expected = ["first", "second", "third", "last"];
-  const letters = { first: "O", second: "P", third: "E", last: "N" };
-  const tabs = document.createElement("div");
-  const panel = document.createElement("div");
-  tabs.className = "tabs";
-  panel.className = "tab-panel";
-  panel.textContent = "Choose where the story begins.";
-  [["third", "Third"], ["last", "Last"], ["first", "First"], ["second", "Second"]].forEach(([id, text]) => {
-    const button = createButton(text, "tab");
-    button.addEventListener("click", () => {
-      if (id !== expected[order.length]) {
-        order.length = 0;
-        panel.textContent = "The story lost its place. Begin again.";
-        showFeedback("Wrong order. The sequence reset.");
-        return;
-      }
-      order.push(id);
-      panel.textContent = order.map((item) => letters[item]).join(" ");
-      if (order.length === 4) completeRoom("OPEN. A useful word.");
-    });
-    tabs.append(button);
+function switchLights() {
+  const scene = section();
+  const control = document.createElement("label");
+  control.className = "switch";
+  control.innerHTML = '<input type="checkbox"><i aria-hidden="true"></i><span>lights</span>';
+  control.querySelector("input").addEventListener("change", () => {
+    document.body.classList.add("night");
+    document.querySelector('meta[name="theme-color"]').content = "#080a11";
+    window.setTimeout(() => advance(scene), 900);
   });
-  stage.append(tabs, panel);
+  scene.append(control);
+  return scene;
 }
 
-function room8() {
-  setupRoom("Find what matters", "Find something with keys that opens no locks.", [
-    "Use search to filter the objects.",
-    "It has many keys and sits near a computer.",
-    "Search for “keyboard”."
-  ]);
-  const objects = ["Anchor", "Bottle", "Candle", "Compass", "Feather", "Hammer", "Keyboard", "Lantern", "Mirror", "Notebook", "Pocket watch", "Rope"];
+function stars() {
+  const scene = section();
+  const field = document.createElement("div");
+  field.className = "stars";
+  const points = [
+    [8, 18, 5], [29, 62, 4], [47, 25, 6], [72, 12, 4], [88, 53, 5],
+    [15, 78, 4], [39, 82, 5], [65, 69, 5], [79, 88, 4]
+  ];
+  points.forEach(([x, y, size], index) => {
+    const star = document.createElement("button");
+    star.type = "button";
+    star.className = index === 6 ? "star odd" : "star";
+    star.style.left = `${x}%`;
+    star.style.top = `${y}%`;
+    star.style.setProperty("--size", `${size}px`);
+    star.setAttribute("aria-label", "Star");
+    if (index === 6) star.addEventListener("click", () => advance(scene));
+    field.append(star);
+  });
+  scene.append(field);
+  return scene;
+}
+
+function findBalance() {
+  const scene = section();
+  const balance = document.createElement("div");
+  balance.className = "balance";
+  balance.innerHTML = '<div class="beam"><span class="weight"></span><span class="weight"></span></div><input type="range" min="0" max="100" value="20" aria-label="Balance">';
+  const beam = balance.querySelector(".beam");
+  const input = balance.querySelector("input");
+  let timer;
+  const update = () => {
+    const difference = Number(input.value) - 68;
+    beam.style.setProperty("--tilt", `${difference / 5}deg`);
+    window.clearTimeout(timer);
+    if (difference === 0) timer = window.setTimeout(() => advance(scene), 650);
+  };
+  input.addEventListener("input", update);
+  scene.append(balance);
+  update();
+  return scene;
+}
+
+function findKeys() {
+  const scene = section();
+  const collection = document.createElement("div");
+  const line = document.createElement("p");
   const input = document.createElement("input");
-  const grid = document.createElement("div");
+  const objects = document.createElement("div");
+  const things = ["anchor", "bottle", "candle", "compass", "feather", "hammer", "keyboard", "lantern", "mirror", "notebook", "watch", "rope"];
+  collection.className = "collection";
+  line.className = "line";
+  line.textContent = "keys, but no locks.";
   input.type = "search";
-  input.placeholder = "Search the collection…";
-  input.setAttribute("aria-label", "Search the collection");
-  grid.className = "objects";
+  input.autocomplete = "off";
+  input.setAttribute("aria-label", "Search");
+  objects.className = "objects";
   const draw = () => {
     const query = input.value.trim().toLowerCase();
-    grid.replaceChildren();
-    objects.filter((item) => item.toLowerCase().includes(query)).forEach((item) => {
+    objects.replaceChildren();
+    things.filter((thing) => thing.includes(query)).forEach((thing) => {
       const button = document.createElement("button");
+      button.type = "button";
       button.className = "object";
-      button.textContent = item;
-      button.addEventListener("click", () => item === "Keyboard" && query
-        ? completeRoom("Keys without locks. Found.")
-        : showFeedback(`${item} is not the object described.`));
-      grid.append(button);
+      button.textContent = thing;
+      if (thing === "keyboard" && query) button.addEventListener("click", () => advance(scene));
+      objects.append(button);
     });
   };
   input.addEventListener("input", draw);
-  stage.append(input, grid);
+  collection.append(line, input, objects);
+  scene.append(collection);
   draw();
-  input.focus();
+  return scene;
 }
 
-function room9() {
-  setupRoom("Everything has its place", "Face east. Leave only the moon. Make the warning safe.", [
-    "Each sentence controls one panel.",
-    "Choose East, Moon only, and Safe.",
-    "Direction: East. Object: Moon only. Status: Safe."
-  ]);
-  stage.innerHTML = '<div class="control"><label>Direction<select><option>North</option><option>South</option><option>East</option><option>West</option></select></label><fieldset><legend>Visible objects</legend><label><input type="checkbox" value="sun" checked> Sun</label><label><input type="checkbox" value="moon"> Moon</label><label><input type="checkbox" value="stars" checked> Stars</label></fieldset><fieldset><legend>Warning status</legend><label><input type="radio" name="status" value="danger" checked> Danger</label><label><input type="radio" name="status" value="safe"> Safe</label></fieldset></div>';
-  const check = () => {
-    const objects = [...stage.querySelectorAll('[type="checkbox"]:checked')].map((input) => input.value);
-    const status = stage.querySelector('[name="status"]:checked').value;
-    if (stage.querySelector("select").value === "East" && objects.join() === "moon" && status === "safe") {
-      completeRoom("The room settles into place.");
-    }
-  };
-  stage.querySelectorAll("input, select").forEach((control) => control.addEventListener("change", check));
-}
-
-function room10() {
-  setupRoom("The whole page", "Remember the rooms. Then tell the page what opened every one.", [
-    "Every interaction happened in the same place.",
-    "The completed memories point to the page itself.",
-    "Enter: THE PAGE WAS THE KEY."
-  ]);
-  stage.innerHTML = '<div class="memories"><p>A friendly word began the <span>conversation</span>.</p><p>The bottom was found by <span>scrolling</span>.</p><p>Darkness revealed what light <span>hid</span>.</p><p>Order turned fragments into <span>meaning</span>.</p></div><form class="final"><label for="answer">What was the key?</label><div class="row"><input id="answer" autocomplete="off" placeholder="Enter the final phrase"><button class="button">Escape</button></div></form>';
-  stage.querySelector("form").addEventListener("submit", (event) => {
+function finalQuestion() {
+  const scene = section();
+  const form = document.createElement("form");
+  form.className = "last-form";
+  form.innerHTML = '<p class="line">What opened every lock?</p><input autocomplete="off" aria-label="Answer">';
+  form.addEventListener("submit", (event) => {
     event.preventDefault();
-    normalize($("#answer").value).replace(/[^a-z0-9]/g, "") === "thepagewasthekey"
-      ? completeRoom("The lock gives way.")
-      : showFeedback("That is not what all ten rooms had in common.");
+    const answer = normalize(form.querySelector("input").value);
+    ["page", "the page", "website", "the website", "site", "the site"].includes(answer)
+      ? advance(scene)
+      : shake(form);
   });
+  scene.append(form);
+  form.querySelector("input").focus();
+  return scene;
 }
 
-function victory() {
-  setupRoom("You escaped.", "At first, this page had nothing to say. You taught it how to speak.", []);
-  const minutes = Math.max(1, Math.round((Date.now() - state.started) / 60000));
-  stage.innerHTML = `<div class="victory"><div class="check">✓</div><p>You completed HTTPscape in about <strong>${minutes} minute${minutes === 1 ? "" : "s"}</strong> and used <strong>${state.hints} hint${state.hints === 1 ? "" : "s"}</strong>.</p><button class="button">Play again</button></div>`;
-  stage.querySelector("button").addEventListener("click", resetGame);
+function ending() {
+  const scene = section("end");
+  scene.innerHTML = '<p class="line">You were never trapped.<br>The page was.</p>';
+  return scene;
 }
 
-const rooms = [room1, room2, room3, room4, room5, room6, room7, room8, room9, room10, victory];
-const render = () => rooms[state.room - 1]();
+const renderers = [greeting, below, holdOn, rememberLights, makeSentence, switchLights, stars, findBalance, findKeys, finalQuestion, ending];
 
-function resetGame() {
+function renderStep(step) {
+  if (step >= 7) document.body.classList.add("night");
+  return renderers[step - 1]();
+}
+
+function renderSavedGame() {
+  page.replaceChildren();
+  for (let step = 1; step < state.step; step += 1) renderEcho(step);
+  renderStep(state.step);
+}
+
+document.querySelector("#reset").addEventListener("click", () => resetDialog.showModal());
+document.querySelector("#cancel-reset").addEventListener("click", () => resetDialog.close());
+document.querySelector("#confirm-reset").addEventListener("click", () => {
   localStorage.removeItem(STORAGE_KEY);
-  state = { room: 1, started: Date.now(), hints: 0 };
-  save();
-  $("#reset-box").close();
-  render();
-}
-
-$("#hint").addEventListener("click", () => {
-  hintIndex = 0;
-  $("#hint-text").textContent = roomHints[0];
-  $("#more-hint").hidden = roomHints.length < 2;
-  $("#hint-box").showModal();
-  state.hints += 1;
-  save();
+  state = { step: 1, started: Date.now() };
+  document.body.classList.remove("night");
+  document.querySelector('meta[name="theme-color"]').content = "#f2f0e9";
+  resetDialog.close();
+  renderSavedGame();
 });
-$("#more-hint").addEventListener("click", () => {
-  hintIndex = Math.min(hintIndex + 1, roomHints.length - 1);
-  $("#hint-text").textContent = roomHints[hintIndex];
-  $("#more-hint").hidden = hintIndex === roomHints.length - 1;
-});
-$("#close-hint").addEventListener("click", () => $("#hint-box").close());
-$("#reset").addEventListener("click", () => $("#reset-box").showModal());
-$("#cancel-reset").addEventListener("click", () => $("#reset-box").close());
-$("#confirm-reset").addEventListener("click", resetGame);
 
-render();
+renderSavedGame();
