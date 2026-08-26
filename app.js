@@ -1,14 +1,7 @@
 const page = document.querySelector("#page");
 const resetDialog = document.querySelector("#reset-dialog");
-const STORAGE_KEY = "httpscape-progress-v3";
 
 let state = { step: 1, started: Date.now(), sorted: false };
-try {
-  const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-  if (saved && Number.isInteger(saved.step) && saved.step >= 1 && saved.step <= 11) state = saved;
-} catch {}
-
-const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 const normalize = (value) => value.toLowerCase().trim().replace(/[.!?,]+$/g, "").replace(/\s+/g, " ");
 
 function shake(element) {
@@ -19,7 +12,6 @@ function shake(element) {
 
 function advance(step, delay = 450) {
   state.step = step;
-  save();
   window.setTimeout(render, delay);
 }
 
@@ -341,7 +333,6 @@ function wireFinale() {
   if (state.step !== 10) return;
   sort.addEventListener("click", () => {
     state.sorted = true;
-    save();
     renderUpdates();
     brand.classList.add("ready");
   });
@@ -383,13 +374,13 @@ function renderPublication() {
 }
 
 function render() {
+  document.body.dataset.step = state.step;
   state.step < 3 ? renderOpening() : renderPublication();
 }
 
 document.querySelector("#reset").addEventListener("click", () => resetDialog.showModal());
 document.querySelector("#cancel-reset").addEventListener("click", () => resetDialog.close());
 document.querySelector("#confirm-reset").addEventListener("click", () => {
-  localStorage.removeItem(STORAGE_KEY);
   state = { step: 1, started: Date.now(), sorted: false };
   document.body.classList.remove("night");
   document.querySelector('meta[name="theme-color"]').content = "#f2f0e9";

@@ -56,7 +56,7 @@ async function evaluate(expression) {
 async function solve(expression, expectedRoom) {
   await evaluate(expression);
   await delay(1700);
-  const room = await evaluate("JSON.parse(localStorage.getItem('httpscape-progress-v3')).step");
+  const room = await evaluate("Number(document.body.dataset.step)");
   if (room !== expectedRoom) throw new Error(`Expected step ${expectedRoom}, received ${room}.`);
 }
 
@@ -75,6 +75,10 @@ await solve("document.querySelector('.sort-button').click();document.querySelect
 
 const ending = await evaluate("document.querySelector('.finished').textContent");
 if (!ending.includes("You may go")) throw new Error(`Unexpected ending: ${ending}`);
+await command("Page.reload", { ignoreCache: true });
+await delay(700);
+const reloadedStep = await evaluate("Number(document.body.dataset.step)");
+if (reloadedStep !== 1) throw new Error(`Expected reload to reset at step 1, received ${reloadedStep}.`);
 console.log("Passed: the complete publication puzzle sequence in headless Edge.");
 await command("Browser.close");
 socket.close();

@@ -26,4 +26,6 @@ path. Set `EDGE_PATH` to use another Chromium-based Edge executable.
 
 ## Deployment
 
-The site is designed for GitHub Pages and can be served directly from the repository root. Player progress is saved in the browser under `httpscape-progress-v3`; no player data leaves the device.
+The site is designed for GitHub Pages and can be served directly from the
+repository root. Progress lasts only for the current page session; reloading or
+using the reset control starts a new run.
