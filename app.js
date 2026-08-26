@@ -4,6 +4,52 @@ const resetDialog = document.querySelector("#reset-dialog");
 let state = { step: 1, started: Date.now(), sorted: false };
 const normalize = (value) => value.toLowerCase().trim().replace(/[.!?,]+$/g, "").replace(/\s+/g, " ");
 
+function figureMarkup(className) {
+  return `
+    <div class="${className}" aria-hidden="true">
+      <svg viewBox="0 0 100 170">
+        <circle class="person-head" cx="50" cy="25" r="17"></circle>
+        <path class="person-body" d="M50 42 L50 103"></path>
+        <path class="person-arm arm-left" d="M50 57 L24 84"></path>
+        <path class="person-arm arm-right" d="M50 57 L77 82"></path>
+        <path class="person-leg leg-left" d="M50 102 L27 145"></path>
+        <path class="person-leg leg-right" d="M50 102 L75 145"></path>
+        <g class="thumb-arm">
+          <path d="M50 59 L73 44 L85 24"></path>
+          <path d="M85 24 L84 9"></path>
+          <path d="M85 24 L95 18"></path>
+        </g>
+      </svg>
+    </div>`;
+}
+
+function playIntro() {
+  document.querySelector(".intro")?.remove();
+  const intro = document.createElement("div");
+  intro.className = "intro";
+  intro.setAttribute("role", "img");
+  intro.setAttribute("aria-label", "HTTPscape. A figure is thrown into the page.");
+  intro.innerHTML = `
+    <div class="intro-title"><span>HTTP</span>scape</div>
+    ${figureMarkup("intro-person")}
+    <button class="intro-skip" type="button">skip</button>`;
+  document.body.append(intro);
+
+  let closed = false;
+  const close = () => {
+    if (closed) return;
+    closed = true;
+    window.removeEventListener("keydown", close);
+    intro.classList.add("leaving");
+    window.setTimeout(() => intro.remove(), 280);
+  };
+  intro.addEventListener("pointerdown", close);
+  intro.addEventListener("click", close);
+  window.addEventListener("keydown", close);
+  requestAnimationFrame(() => intro.classList.add("playing"));
+  window.setTimeout(close, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 1200 : 3300);
+}
+
 function shake(element) {
   element.classList.remove("shake");
   void element.offsetWidth;
@@ -351,21 +397,7 @@ function playEscape() {
   escapeScene.setAttribute("role", "status");
   escapeScene.setAttribute("aria-label", "You escaped.");
   escapeScene.innerHTML = `
-    <div class="escape-person" aria-hidden="true">
-      <svg viewBox="0 0 100 170">
-        <circle class="person-head" cx="50" cy="25" r="17"></circle>
-        <path class="person-body" d="M50 42 L50 103"></path>
-        <path class="person-arm arm-left" d="M50 57 L24 84"></path>
-        <path class="person-arm arm-right" d="M50 57 L77 82"></path>
-        <path class="person-leg leg-left" d="M50 102 L27 145"></path>
-        <path class="person-leg leg-right" d="M50 102 L75 145"></path>
-        <g class="thumb-arm">
-          <path d="M50 59 L73 44 L85 24"></path>
-          <path d="M85 24 L84 9"></path>
-          <path d="M85 24 L95 18"></path>
-        </g>
-      </svg>
-    </div>
+    ${figureMarkup("escape-person")}
     <p class="escape-message">You’re out.</p>`;
   document.body.append(escapeScene);
   requestAnimationFrame(() => {
@@ -419,6 +451,8 @@ document.querySelector("#confirm-reset").addEventListener("click", () => {
   document.querySelector('meta[name="theme-color"]').content = "#f2f0e9";
   resetDialog.close();
   render();
+  playIntro();
 });
 
 render();
+playIntro();

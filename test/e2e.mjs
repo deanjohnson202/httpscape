@@ -62,6 +62,10 @@ async function solve(expression, expectedRoom) {
 
 await command("Runtime.enable");
 await delay(300);
+const introTitle = await evaluate("document.querySelector('.intro-title').textContent");
+if (!introTitle.includes("HTTPscape")) throw new Error("Opening title did not render.");
+await evaluate("document.querySelector('.intro').click()");
+await delay(350);
 await solve("const f=document.querySelector('.entry');f.querySelector('input').value='hello';f.requestSubmit()", 2);
 await solve("document.querySelector('.green-button').click()", 3);
 await solve("new Promise(resolve=>{const b=document.querySelector('.more-button');b.dispatchEvent(new PointerEvent('pointerdown'));setTimeout(()=>{b.dispatchEvent(new PointerEvent('pointerup'));resolve()},2000)})", 4);
