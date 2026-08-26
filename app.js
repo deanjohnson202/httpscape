@@ -78,7 +78,6 @@ function renderOpening() {
       accepted.includes(normalize(form.querySelector("input").value)) ? advance(2) : shake(form);
     });
     page.append(scene);
-    form.querySelector("input").focus();
     return;
   }
 
